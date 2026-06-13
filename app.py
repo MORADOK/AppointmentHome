@@ -28,14 +28,13 @@ def format_thai_date(date_obj):
     return f"{day} {month} {year_buddhist}"
 
 # ==========================================
-# 3. ฟังก์ชันสร้างหน้าเว็บสำหรับสั่งปริ้น (อัปเดตระบบปริ้นใหม่)
+# 3. ฟังก์ชันสร้างหน้าเว็บสั่งปริ้น (โหมดประหยัดหมึก / Eco Mode)
 # ==========================================
 def generate_html_print_view(patient_data):
     brand_green = "#2C5E3B"
     brand_brown = "#8B5A2B"
     logo_base64 = get_base64_image("logo.png") 
     
-    # โค้ด HTML บริสุทธิ์
     html_content = f"""<!DOCTYPE html>
     <html lang="th">
     <head>
@@ -48,20 +47,24 @@ def generate_html_print_view(patient_data):
                 background-color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             }}
             .header {{ 
-                background-color: {brand_green}; color: white; 
+                background-color: transparent !important; /* เอาพื้นหลังสีเขียวออก */
                 padding: 15px; display: flex; align-items: center; justify-content: center;
+                border-bottom: 2px solid {brand_green}; /* ใส่เส้นใต้สีเขียวแทนการใช้พื้นหลัง */
+                margin-bottom: 15px;
             }}
             .logo {{ width: 60px; height: auto; margin-right: 15px; }}
-            .title {{ font-size: 20px; font-weight: bold; text-align: center; margin: 0; color: #FFFFFF !important; }}
-            .subtitle {{ font-size: 14px; text-align: center; margin: 0; font-weight: normal; color: #EEEEEE !important; }}
-            .content {{ padding: 20px; }}
+            
+            /* เปลี่ยนสีชื่อ รพ. เป็นสีเขียวเข้มแทนสีขาว เพื่อให้อ่านออกบนกระดาษขาว */
+            .title {{ font-size: 20px; font-weight: bold; text-align: center; margin: 0; color: {brand_green} !important; }}
+            .subtitle {{ font-size: 14px; text-align: center; margin: 0; font-weight: normal; color: #555555 !important; }}
+            
+            .content {{ padding: 0 20px 20px 20px; }}
             .row {{ display: flex; justify-content: space-between; margin-bottom: 15px; }}
-            .highlight {{ color: {brand_green}; font-size: 18px; font-weight: bold; }}
-            .section-title {{ color: {brand_brown}; font-weight: bold; border-bottom: 2px solid {brand_brown}; padding-bottom: 5px; margin-bottom: 15px; }}
-            .instruction {{ color: {brand_brown}; font-weight: bold; margin-top: 20px; }}
+            .highlight {{ color: {brand_green} !important; font-size: 18px; font-weight: bold; }}
+            .section-title {{ color: {brand_brown} !important; font-weight: bold; border-bottom: 2px solid {brand_brown}; padding-bottom: 5px; margin-bottom: 15px; }}
+            .instruction {{ color: {brand_brown} !important; font-weight: bold; margin-top: 20px; }}
             .footer {{ text-align: center; font-size: 12px; font-style: italic; margin-top: 20px; color: #666; }}
             
-            /* ดีไซน์ปุ่มปริ้น */
             .print-btn {{
                 background-color: {brand_green}; color: white; border: none; 
                 padding: 12px 20px; font-size: 16px; border-radius: 5px; 
@@ -69,8 +72,8 @@ def generate_html_print_view(patient_data):
             }}
             .print-btn:hover {{ background-color: #1e4028; }}
             
-            /* ซ่อนปุ่มตอนปริ้นลงกระดาษจริง */
             @media print {{
+                * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
                 body {{ padding: 0; }}
                 .card {{ border: none; box-shadow: none; max-width: 100%; }}
                 .no-print {{ display: none !important; }}
@@ -79,7 +82,6 @@ def generate_html_print_view(patient_data):
     </head>
     <body>
         <button class="no-print print-btn" onclick="window.print()">🖨️ คลิกที่นี่เพื่อสั่งปริ้นบัตรนัด (Print)</button>
-        
         <div class="card">
             <div class="header">
                 <img src="data:image/png;base64,{logo_base64}" class="logo" alt="Logo">
@@ -228,15 +230,12 @@ if st.button("✨ สร้างบัตรนัดหมาย", type="prima
         
         st.success("🎉 บัตรนัดพร้อมพิมพ์แล้ว! ตรวจสอบความถูกต้องและสั่งพิมพ์ด้านล่างได้เลย")
         
-        # --- อัปเดตเทคนิคใหม่: แปลง HTML เป็น Base64 แล้วฝังลง iframe ---
         html_view = generate_html_print_view(data_to_fill)
         b64_html = base64.b64encode(html_view.encode('utf-8')).decode('utf-8')
         
-        # สร้าง iframe โหลดหน้าเว็บ HTML โดยตรง (ทะลุระบบบล็อกของ Streamlit)
         iframe_code = f'<iframe src="data:text/html;base64,{b64_html}" width="100%" height="750" style="border:none;"></iframe>'
         st.markdown(iframe_code, unsafe_allow_html=True)
         
-        # ปุ่มดาวน์โหลด Excel เผื่อฉุกเฉิน
         try:
             excel_file = generate_appointment_card(TEMPLATE_FILENAME, data_to_fill)
             st.download_button(
@@ -246,4 +245,4 @@ if st.button("✨ สร้างบัตรนัดหมาย", type="prima
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         except FileNotFoundError:
-            st.error(f"❌ ไม่สามารถสร้างไฟล์ Excel ได้เนื่องจากไม่พบไฟล์ชื่อ '{TEMPLATE_FILENAME}'")
+            st.error(f"❌ ไม่พบไฟล์ '{TEMPLATE_FILENAME}'")
