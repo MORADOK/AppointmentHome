@@ -36,9 +36,9 @@ def generate_appointment_card(template_path, patient_data):
     sheet['D6'] = f"HN : {patient_data['hn']}"
     sheet['B10'] = patient_data['appt_date']
     sheet['D10'] = patient_data['appt_time']
-    sheet['C7'] = patient_data['doctor']
-    sheet['D7'] = patient_data['action']
-    sheet['B8'] = patient_data['instruction']
+    sheet['B12'] = patient_data['doctor']
+    sheet['D12'] = patient_data['action']
+    sheet['B14'] = patient_data['instruction']
 
     output = BytesIO()
     wb.save(output)
