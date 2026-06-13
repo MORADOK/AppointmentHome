@@ -32,10 +32,10 @@ def generate_appointment_card(template_path, patient_data):
     sheet = wb.active
 
     # หยอดข้อมูลลง Template
-    sheet['A4'] = f"ชื่อ - สกุล : {patient_data['name']}"
-    sheet['D4'] = f"HN : {patient_data['hn']}"
-    sheet['A7'] = patient_data['appt_date']
-    sheet['B7'] = patient_data['appt_time']
+    sheet['B6'] = f"ชื่อ - สกุล : {patient_data['name']}"
+    sheet['D6'] = f"HN : {patient_data['hn']}"
+    sheet['B10'] = patient_data['appt_date']
+    sheet['D10'] = patient_data['appt_time']
     sheet['C7'] = patient_data['doctor']
     sheet['D7'] = patient_data['action']
     sheet['B8'] = patient_data['instruction']
