@@ -6,15 +6,26 @@ import pandas as pd
 from datetime import datetime
 
 # ==========================================
-# 0. ตั้งค่าและซ่อนเมนู Streamlit
+# 0. ตั้งค่าและซ่อนเมนู Streamlit (อัปเดตซ่อนไอคอนมุมล่างขวา)
 # ==========================================
 st.set_page_config(page_title="ระบบจัดการ รพ.โฮม", page_icon="🏥", layout="wide")
 
 hide_streamlit_style = """
 <style>
+    /* 1. ซ่อนเมนูแฮมเบอร์เกอร์ขวาบน */
     #MainMenu {visibility: hidden;}
+    /* 2. ซ่อน Header แถบด้านบนสุด */
     header {visibility: hidden;}
+    /* 3. ซ่อน Footer ลายน้ำด้านล่างสุด */
     footer {visibility: hidden;}
+    /* 4. ซ่อนปุ่ม Deploy (มงกุฎ) เผื่อในบางเวอร์ชัน */
+    .stDeployButton {display: none !important;}
+    /* 5. ซ่อนลายน้ำและไอคอนมุมขวาล่างทั้งหมด (Profile, Made with Streamlit) */
+    #viewerBadge_container {display: none !important;}
+    .viewerBadge_container {display: none !important;}
+    [data-testid="viewerBadge"] {display: none !important;}
+    
+    /* ดันเนื้อหาขึ้นไปแทนที่พื้นที่ว่างของ Header */
     .block-container { padding-top: 1rem; padding-bottom: 0rem; }
 </style>
 """
