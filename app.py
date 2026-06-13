@@ -356,7 +356,7 @@ with tab1:
     baht_text_str = get_baht_text(total_fee)
     st.info(f"**💰 รวมเงินทั้งสิ้น: {total_fee:,.2f} บาท** 👉 {baht_text_str}")
 
-    # ดึงเลขใบเสร็จและคำนวณไว้ด้านนอก (แก้บั๊ก SyntaxError)
+    # ดึงเลขใบเสร็จออกมาจัดการ (แก้บั๊ก SyntaxError)
     receipt_no_val = ex_data["receipt_no"] if ex_data["receipt_no"] else "0000000000"
 
     data_rec = {
@@ -364,7 +364,7 @@ with tab1:
         "hn": cn_number, 
         "address": ex_data["address"],
         "receipt_no": receipt_no_val,
-        "date": ex_data["date"],
+        "date": ex_data["date"] if ex_data["date"] != "ไม่ระบุวันที่" else format_thai_date(datetime.today()),
         "payment_method": payment_method,
         "receiver": receiver_name,
         "items": edited_df.to_dict('records'),
@@ -372,7 +372,7 @@ with tab1:
         "baht_text": baht_text_str
     }
 
-    # ปุ่มดาวน์โหลดไฟล์ Excel ใบเสร็จ
+    # ดาวน์โหลด Excel ใบเสร็จ
     excel_receipt_data = generate_receipt_excel_file(data_rec)
     st.download_button(
         label="📥 ดาวน์โหลดใบเสร็จรับเงินเป็นไฟล์ Excel",
@@ -394,10 +394,37 @@ with tab1:
 # --- แท็บ: บัตรนัด ---
 with tab2:
     appt_type = st.radio("ประเภทนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
-    col_t1, col_t2 = st.columns(2)
-    with col_t1: appt_date = st.text_input("วันที่นัดหมาย (พิมพ์ระบุ)", value=ex_data["date"] if ex_data["date"] != "ไม่ระบุวันที่" else format_thai_date(datetime.today()))
-    with col_t2: time_sel = st.selectbox("เวลานัด", ["08.00 - 10.00 น.", "10.00 - 12.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
     
+    st.markdown("**📅 ระบบคำนวณวันนัดอัตโนมัติ**")
+    col_c1, col_c2, col_c3 = st.columns([1, 1, 2])
+    with col_c1:
+        adv_num = st.number_input("จำนวนล่วงหน้า", min_value=0, value=0, step=1, help="ใส่ตัวเลข 0 หากต้องการใช้วันที่ปัจจุบัน")
+    with col_c2:
+        adv_unit = st.selectbox("หน่วย", ["วัน (Days)", "สัปดาห์ (Weeks)", "เดือน (Months)"])
+    
+    # ใช้วันที่ปัจจุบันในการคำนวณ
+    base_date = pd.Timestamp.today()
+    if adv_num > 0:
+        if "วัน" in adv_unit:
+            calc_date = base_date + pd.DateOffset(days=adv_num)
+        elif "สัปดาห์" in adv_unit:
+            calc_date = base_date + pd.DateOffset(weeks=adv_num)
+        else:
+            calc_date = base_date + pd.DateOffset(months=adv_num)
+    else:
+        calc_date = base_date
+
+    with col_c3:
+        # ใช้ Calendar Picker เพื่อให้ปรับเปลี่ยนตามวันหยุดได้
+        final_date = st.date_input("🗓️ ปฏิทิน (ระบบคำนวณให้อัตโนมัติ ปรับคลิกแก้ได้)", value=calc_date.date())
+        appt_date_thai = format_thai_date(final_date)
+        
+    col_t1, col_t2 = st.columns(2)
+    with col_t1: 
+        appt_date_text = st.text_input("รูปแบบวันที่บนบัตร (แก้ไขข้อความได้)", value=appt_date_thai)
+    with col_t2: 
+        time_sel = st.selectbox("เวลานัด", ["08.00 - 10.00 น.", "10.00 - 12.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
+        
     col_d1, col_d2 = st.columns(2)
     with col_d1: doc_appt = st.text_input("แพทย์ผู้ตรวจ", value="นพ.อภิสิทธิ์ สื่อประเสริฐสิทธิ์")
     with col_d2: act_appt = st.text_input("รายการตรวจ", value="ตรวจติดตามอาการทั่วไป" if appt_type == "มาติดตามอาการ" else "เจาะเลือด ตรวจสุขภาพ")
@@ -407,5 +434,14 @@ with tab2:
         if not ex_data['name']:
             st.error("⚠️ กรุณาอัปโหลดไฟล์ Excel ก่อนเพื่อดึงชื่อคนไข้ครับ")
         else:
-            data_appt = {"name": ex_data["name"], "hn": cn_number, "type": appt_type, "appt_date": appt_date, "appt_time": time_sel, "doctor": doc_appt, "action": act_appt, "instruction": ins_appt}
+            data_appt = {
+                "name": ex_data["name"], 
+                "hn": cn_number, 
+                "type": appt_type, 
+                "appt_date": appt_date_text, 
+                "appt_time": time_sel, 
+                "doctor": doc_appt, 
+                "action": act_appt, 
+                "instruction": ins_appt
+            }
             st.markdown(f'<iframe src="data:text/html;base64,{generate_appt_html(data_appt)}" width="100%" height="500" style="border:none;"></iframe>', unsafe_allow_html=True)
