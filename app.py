@@ -122,7 +122,7 @@ def build_modern_template_with_logo_v2():
         ws[f'{col}16'].border = Border(bottom=thin_border_side, left=ws[f'{col}16'].border.left, right=ws[f'{col}16'].border.right)
 
     # บันทึกไฟล์
-    output_filename = "Template_Modern_With_Logo.xlsx"
+    output_filename = "Template.xlsx"
     wb.save(output_filename)
     print(f"✅ สร้างไฟล์ Template Modern (v2) สีชัดเจนสำเร็จ: {output_filename}")
 
