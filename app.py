@@ -140,6 +140,25 @@ def generate_appointment_card(template_path, patient_data):
 # 5. หน้าจอ UI (Streamlit)
 # ==========================================
 st.set_page_config(page_title="ระบบออกบัตรนัด - รพ.โฮม", page_icon="🏥", layout="centered")
+# ==========================================
+# โค้ดสำหรับซ่อนเมนูและ Header ของ Streamlit
+# ==========================================
+hide_streamlit_style = """
+<style>
+    /* ซ่อนปุ่ม Hamburger menu และเมนู Share */
+    #MainMenu {visibility: hidden;}
+    /* ซ่อน Header แถบด้านบนสุดทั้งหมด */
+    header {visibility: hidden;}
+    /* ซ่อน Footer ลายน้ำของ Streamlit ด้านล่างสุด */
+    footer {visibility: hidden;}
+    /* ดันเนื้อหาขึ้นไปแทนที่พื้นที่ว่างของ Header */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+    }
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("🏥 ระบบออกบัตรนัดหมาย")
 st.markdown("**โรงพยาบาลโฮม ฉะเชิงเทรา**")
