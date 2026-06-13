@@ -56,8 +56,13 @@ def get_baht_text(number):
     else: text += read_num(dec_part) + "สตางค์"
     return f"({text})"
 
+def format_thai_date(date_obj):
+    if not date_obj: return ""
+    thai_months = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+    return f"{date_obj.day} {thai_months[date_obj.month]} {date_obj.year + 543}"
+
 # ==========================================
-# 2. 🤖 ฟังก์ชันสกัดข้อมูลขั้นสูง (Advanced Extraction)
+# 2. 🤖 ฟังก์ชันสกัดข้อมูลใบเสร็จ (Data Extraction)
 # ==========================================
 def extract_raw_receipt(uploaded_file):
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
@@ -69,45 +74,38 @@ def extract_raw_receipt(uploaded_file):
         v = ws.cell(row=r, column=c).value
         return str(v).strip() if v is not None else ""
 
-    # สแกนหาข้อมูลส่วนหัว (ชื่อ, เลขที่, ที่อยู่, วันที่)
     for r in range(1, 15):
         row_vals = [val(r, c) for c in range(1, 20)]
         row_str = " ".join(row_vals)
         
-        # 1. ดึงชื่อ
         if "ชื่อผู้ป่วย" in row_str and not data["name"]:
             for v in row_vals:
                 if "ชื่อผู้ป่วย" in v:
                     data["name"] = v.replace("ชื่อผู้ป่วย", "").replace(":", "").strip()
         
-        # 2. ดึงเลขที่ใบเสร็จ
         if "เลขที่" in row_str and "เสียภาษี" not in row_str and not data["receipt_no"]:
             for v in row_vals:
                 if "เลขที่" in v:
                     data["receipt_no"] = v.replace("เลขที่", "").replace(":", "").strip()
         
-        # 3. ดึงวันที่ (ค้นหาคำเดือนภาษาไทยและปี 256x)
         thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
         if not data["date"]:
             for v in row_vals:
                 if any(m in v for m in thai_months) and "256" in v:
                     data["date"] = v
                     
-        # 4. ดึงที่อยู่ (ค้นหาคำว่า ถ. ต. อ. จ. หรือ ม.)
         if not data["address"]:
             for v in row_vals:
                 if ("ต." in v and "อ." in v) or ("ถ." in v) or ("จ." in v):
-                    if "โรงพยาบาล" not in v: # ป้องกันดึงที่อยู่ รพ. ผิดมา
+                    if "โรงพยาบาล" not in v:
                         data["address"] = v
 
-    # สแกนหารายการค่าใช้จ่าย (ค้นหาแถวที่ขึ้นต้นด้วยตัวเลข 1, 2, 3...)
     for r in range(5, 50):
         cell_B = val(r, 2)
         cell_A = val(r, 1)
         item_no = cell_B if cell_B.isdigit() else cell_A
         
         if item_no.isdigit():
-            # หากเจอตัวเลขลำดับ ให้กวาดหาชื่อรายการ
             item_name = ""
             for c in range(2, 10):
                 v = val(r, c)
@@ -115,7 +113,6 @@ def extract_raw_receipt(uploaded_file):
                     item_name = v
                     break
             
-            # กวาดหาราคา (สแกนถอยหลังจากขวามาซ้าย)
             item_price = 0.0
             for c in range(20, 2, -1):
                 v_raw = ws.cell(row=r, column=c).value
@@ -136,7 +133,7 @@ def extract_raw_receipt(uploaded_file):
     return data
 
 # ==========================================
-# 3. ฟังก์ชัน HTML สำหรับสั่งปริ้น (ใบเสร็จ / บัตรนัด)
+# 3. ฟังก์ชัน HTML สำหรับสั่งปริ้น 
 # ==========================================
 brand_green = "#2C5E3B"
 brand_brown = "#8B5A2B"
@@ -230,42 +227,38 @@ def generate_appt_html(data):
 # ==========================================
 # 4. หน้าจอ UI (Streamlit)
 # ==========================================
-st.title("🏥 ระบบให้บริการ รพ.โฮม (Auto-Fill System)")
-
-# --- ส่วนที่ 1: อัปโหลดไฟล์กลาง (ศูนย์กลางของระบบ) ---
-st.markdown("### 1️⃣ อัปโหลดไฟล์ใบเสร็จ Excel (เพื่อดึงข้อมูลเข้าระบบ)")
-uploaded_receipt = st.file_uploader("ลากไฟล์ Excel ใบเสร็จมาวางที่นี่...", type=["xlsx", "xls"], label_visibility="collapsed")
-
-# ค่าพื้นฐาน หากยังไม่อัปโหลดไฟล์
-ex_data = {"name": "", "receipt_no": "", "address": "", "date": "ไม่ระบุวันที่", "items": []}
-if uploaded_receipt:
-    try:
-        ex_data = extract_raw_receipt(uploaded_receipt)
-        st.success(f"✅ ดึงข้อมูลสำเร็จ! พบชื่อ: {ex_data['name']} | วันที่: {ex_data['date']} | รายการ: {len(ex_data['items'])} รายการ")
-    except Exception as e:
-        st.error(f"❌ อ่านไฟล์ผิดพลาด: {e}")
-
+st.title("🏥 ระบบให้บริการ รพ.โฮม")
+st.write("เลือกระบบที่ต้องการใช้งานจากแท็บด้านล่าง")
 st.divider()
 
-# --- ส่วนที่ 2: ให้พนักงานกรอกแค่สิ่งที่ไม่มีในไฟล์ ---
-st.markdown("### 2️⃣ ข้อมูลที่พนักงานต้องกรอกเอง")
-col_emp1, col_emp2, col_emp3 = st.columns(3)
-with col_emp1: receiver_name = st.text_input("👤 ชื่อผู้รับเงิน (พนักงาน)", value="นาย มรดก มาลี")
-with col_emp2: payment_method = st.selectbox("💳 วิธีการชำระเงิน", ["โอนจ่าย", "เงินสด", "บัตรเครดิต"])
-with col_emp3: cn_number = st.text_input("🆔 รหัสคนไข้ (HN / CN)", placeholder="(เผื่อต้องการออกบัตรนัด)", help="ในไฟล์ใบเสร็จไม่มี HN ให้พิมพ์เองหากต้องใช้")
+# แยกระบบด้วยแท็บอย่างชัดเจน
+tab1, tab2 = st.tabs(["🧾 ออกใบเสร็จรับเงิน (ดึงข้อมูลอัตโนมัติ)", "🏥 ออกบัตรนัดหมาย (กรอกข้อมูลเอง)"])
 
-st.divider()
-
-# --- ส่วนที่ 3: แท็บปริ้นเอกสาร ---
-st.markdown("### 3️⃣ เลือกเอกสารที่ต้องการปริ้น")
-tab1, tab2 = st.tabs(["🧾 ปริ้นใบเสร็จรับเงิน", "🏥 ปริ้นบัตรนัดหมาย"])
-
-# --- แท็บ: ใบเสร็จรับเงิน ---
+# ------------------------------------
+# แท็บ 1: ใบเสร็จรับเงิน (ดึงจากไฟล์ 100%)
+# ------------------------------------
 with tab1:
-    st.write("**ตารางรายการ (ดึงมาให้อัตโนมัติ เช็คความถูกต้องได้)**")
+    st.markdown("### 1️⃣ อัปโหลดไฟล์ใบเสร็จ (Excel)")
+    uploaded_receipt = st.file_uploader("ลากไฟล์ Excel ใบเสร็จมาวางที่นี่...", type=["xlsx", "xls"], key="receipt_upload")
     
-    # ดึง Data มาแสดงในตาราง
-    df_items = pd.DataFrame(ex_data["items"]) if ex_data["items"] else pd.DataFrame([{"รายการ": "ค่าตรวจแพทย์ทั่วไป", "ราคา": 500.0}])
+    ex_data = {"name": "", "receipt_no": "", "address": "", "date": "ไม่ระบุวันที่", "items": []}
+    
+    if uploaded_receipt:
+        try:
+            ex_data = extract_raw_receipt(uploaded_receipt)
+            st.success(f"✅ ดึงข้อมูลสำเร็จ! พบชื่อ: {ex_data['name']} | วันที่: {ex_data['date']} | พบรายการทั้งหมด {len(ex_data['items'])} รายการ")
+        except Exception as e:
+            st.error(f"❌ อ่านไฟล์ผิดพลาด: {e}")
+
+    st.markdown("### 2️⃣ ข้อมูลผู้รับเงิน")
+    col_rc1, col_rc2 = st.columns(2)
+    with col_rc1:
+        receiver_name = st.text_input("👤 ชื่อผู้รับเงิน (พนักงาน)", value="นาย มรดก มาลี")
+    with col_rc2:
+        payment_method = st.selectbox("💳 วิธีการชำระเงิน", ["โอนจ่าย", "เงินสด", "บัตรเครดิต"])
+        
+    st.write("**ตารางรายการ (ตรวจสอบและแก้ไขราคาได้)**")
+    df_items = pd.DataFrame(ex_data["items"]) if ex_data["items"] else pd.DataFrame([{"รายการ": "ไม่มีข้อมูล (กรุณาอัปโหลดไฟล์)", "ราคา": 0.0}])
     
     edited_df = st.data_editor(
         df_items,
@@ -282,14 +275,13 @@ with tab1:
 
     if st.button("✨ สร้างใบเสร็จรับเงิน", type="primary", use_container_width=True):
         if not ex_data['name']:
-            st.error("⚠️ ไม่พบชื่อผู้ป่วย กรุณาอัปโหลดไฟล์ใบเสร็จก่อนครับ")
+            st.error("⚠️ กรุณาอัปโหลดไฟล์ Excel ก่อนเพื่อดึงข้อมูลใบเสร็จครับ")
         else:
             data_rec = {
                 "name": ex_data["name"], 
-                "hn": cn_number, 
                 "address": ex_data["address"],
                 "receipt_no": ex_data["receipt_no"],
-                "date": ex_data["date"], # ดึงวันที่จากไฟล์ตรงๆ เลย
+                "date": ex_data["date"], 
                 "payment_method": payment_method,
                 "receiver": receiver_name,
                 "items": edited_df.to_dict('records'),
@@ -299,14 +291,28 @@ with tab1:
             iframe_code = f'<iframe src="data:text/html;base64,{generate_receipt_html(data_rec)}" width="100%" height="800" style="border:none;"></iframe>'
             st.markdown(iframe_code, unsafe_allow_html=True)
 
-# --- แท็บ: บัตรนัด ---
+
+# ------------------------------------
+# แท็บ 2: บัตรนัด (กรอกเองเหมือนเดิม 100%)
+# ------------------------------------
 with tab2:
+    st.markdown("### 1️⃣ ข้อมูลคนไข้")
+    col_name, col_hn = st.columns(2)
+    with col_name: 
+        # ให้กรอกเองเหมือนระบบดั้งเดิม
+        appt_name = st.text_input("👤 ชื่อ-นามสกุล", placeholder="เช่น นาย ธนายุทธ วิทยาประเสริฐ")
+    with col_hn: 
+        appt_hn = st.text_input("🆔 รหัสคนไข้ (HN / CN)", placeholder="เช่น 0007234")
+        
+    st.markdown("### 2️⃣ รายละเอียดการนัดหมาย")
     appt_type = st.radio("ประเภทนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
     
     col_t1, col_t2 = st.columns(2)
-    # วันที่ในบัตรนัดให้ดึงค่าวันที่จากใบเสร็จมาเป็นค่าเริ่มต้น เผื่อใช้อ้างอิง
-    with col_t1: appt_date = st.text_input("วันที่นัดหมาย (พิมพ์ระบุ)", value=ex_data["date"] if ex_data["date"] != "ไม่ระบุวันที่" else "12 สิงหาคม 2569")
-    with col_t2: time_sel = st.selectbox("เวลานัด", ["08.00 - 10.00 น.", "10.00 - 12.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
+    with col_t1: 
+        date_sel = st.date_input("วันที่นัด", value=datetime.today())
+        date_th = format_thai_date(date_sel)
+    with col_t2: 
+        time_sel = st.selectbox("เวลานัด", ["08.00 - 10.00 น.", "10.00 - 12.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
     
     col_d1, col_d2 = st.columns(2)
     with col_d1: doc_appt = st.text_input("แพทย์ผู้ตรวจ", value="นพ.อภิสิทธิ์ สื่อประเสริฐสิทธิ์")
@@ -314,17 +320,17 @@ with tab2:
     ins_appt = st.text_input("คำแนะนำ", value="รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง" if appt_type == "มาติดตามอาการ" else "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ")
 
     if st.button("✨ สร้างบัตรนัด", type="primary", use_container_width=True):
-        if not ex_data['name']:
-            st.error("⚠️ กรุณาอัปโหลดไฟล์ Excel ก่อนเพื่อดึงชื่อคนไข้ครับ")
+        if not appt_name or not appt_hn:
+            st.warning("⚠️ กรุณากรอก 'ชื่อ-นามสกุล' และ 'HN' ก่อนกดสร้างบัตรนัดครับ")
         else:
             data_appt = {
-                "name": ex_data["name"], 
-                "hn": cn_number, 
+                "name": appt_name.strip(), 
+                "hn": appt_hn.strip(), 
                 "type": appt_type, 
-                "appt_date": appt_date, 
+                "appt_date": date_th, 
                 "appt_time": time_sel, 
-                "doctor": doc_appt, 
-                "action": act_appt, 
-                "instruction": ins_appt
+                "doctor": doc_appt.strip(), 
+                "action": act_appt.strip(), 
+                "instruction": ins_appt.strip()
             }
             st.markdown(f'<iframe src="data:text/html;base64,{generate_appt_html(data_appt)}" width="100%" height="500" style="border:none;"></iframe>', unsafe_allow_html=True)
