@@ -1,6 +1,6 @@
 import streamlit as st
 import openpyxl
-from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+from openpyxl.styles import Font, Alignment, Border, Side
 from io import BytesIO
 import base64
 import pandas as pd
@@ -60,6 +60,11 @@ def get_baht_text(number):
     if dec_part == "00": text += "ถ้วน"
     else: text += read_num(dec_part) + "สตางค์"
     return f"({text})"
+
+def format_thai_date(date_obj):
+    if not date_obj: return ""
+    thai_months = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+    return f"{date_obj.day} {thai_months[date_obj.month]} {date_obj.year + 543}"
 
 # ==========================================
 # 2. 🤖 ฟังก์ชันสกัดข้อมูลขั้นสูงจากไฟล์ดิบ
@@ -135,6 +140,7 @@ def generate_receipt_html(data):
             items_html += f"<tr><td style='text-align:left;'>{i+1}</td><td style='text-align:left;'>{item_name}</td><td style='text-align:right;'>{item_price:,.2f}</td></tr>"
 
     html = f"""<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>
+        * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
         body {{ font-family: 'Tahoma', sans-serif; color: #333; font-size: 14px; margin: 0; padding: 10px; }}
         .card {{ max-width: 800px; margin: 0 auto; padding: 20px; background-color: white; }}
         .header-container {{ position: relative; text-align: center; margin-bottom: 30px; }}
@@ -172,26 +178,58 @@ def generate_receipt_html(data):
                 <div><b>ชำระโดย : {data['payment_method']}</b></div>
                 <div style="text-align: center; width: 300px;"><p>(........................................................)</p><p><b>{data['receiver']}</b><br>ผู้รับเงิน</p></div>
             </div>
+            <div class="footer-container">
+                <div><b>โรงพยาบาลโฮม ฉะเชิงเทรา</b><br>149/1 ถ.ฉะเชิงเทรา-บางปะกง ต.หน้าเมือง อ.เมือง จ.ฉะเชิงเทรา 24000<br>Tel. 038-511-123 | E-mail: Hospitalashome@gmail.com</div>
+                <div style="text-align: right;"><b>บริษัท สื่อ การแพทย์ จำกัด</b><br>149/1 ถ.ฉะเชิงเทรา-บางปะกง ต.หน้าเมือง<br>อ.เมือง จ.ฉะเชิงเทรา 24000<br>เลขประจำตัวผู้เสียภาษีอากร 0245563001367</div>
+            </div>
+        </div>
+    </body></html>"""
+    return base64.b64encode(html.encode('utf-8')).decode('utf-8')
+
+def generate_appt_html(data):
+    html = f"""<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>
+        * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+        body {{ font-family: 'Tahoma', sans-serif; color: #333; }}
+        .card {{ max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding-bottom: 20px; background-color: white; }}
+        .header {{ border-bottom: 2px solid {brand_green}; padding: 15px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }}
+        .logo {{ width: 60px; margin-right: 15px; }}
+        .title {{ font-size: 20px; font-weight: bold; margin: 0; color: {brand_green}; }}
+        .subtitle {{ font-size: 14px; margin: 0; color: #555; }}
+        .content {{ padding: 0 20px; }}
+        .row {{ display: flex; justify-content: space-between; margin-bottom: 10px; }}
+        .print-btn {{ background-color: {brand_green}; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; font-size: 16px; margin-bottom: 10px; }}
+        @media print {{ .no-print {{ display: none !important; }} .card {{ border: none; }} }}
+    </style></head><body>
+        <button class="no-print print-btn" onclick="window.print()">🖨️ ปริ้นบัตรนัด</button>
+        <div class="card">
+            <div class="header"><img src="data:image/png;base64,{logo_base64}" class="logo">
+            <div><p class="title">โรงพยาบาลโฮม ฉะเชิงเทรา</p><p class="subtitle">บัตรนัดหมาย | Appointment Card</p></div></div>
+            <div class="content">
+                <div class="row"><div><b>ชื่อ:</b> {data['name']}</div><div><b>HN:</b> {data['hn']}</div></div>
+                <hr>
+                <div class="row"><div style="color:{brand_green}; font-weight:bold;">วันที่นัด: {data['appt_date']}</div>
+                <div style="color:{brand_green}; font-weight:bold;">เวลา: {data['appt_time']}</div></div>
+                <div class="row"><div><b>แพทย์:</b> {data['doctor']}</div><div><b>รายการ:</b> {data['action']}</div></div>
+                <p style="color:{brand_brown}; font-weight:bold;">📌 คำแนะนำ: <span style="color:#333; font-weight:normal;">{data['instruction']}</span></p>
+                <p style="text-align:center; font-size:12px; margin-top:20px;">โทร 038-511-123 (กรุณานำยาเดิมมาด้วยทุกครั้ง)</p>
+            </div>
         </div>
     </body></html>"""
     return base64.b64encode(html.encode('utf-8')).decode('utf-8')
 
 # ==========================================
-# 4. 📊 ฟังก์ชันสร้างไฟล์ Excel ใบเสร็จฉบับปรับปรุงอัตโนมัติ (NEW!)
+# 4. 📊 ฟังก์ชันสร้างไฟล์ Excel ใบเสร็จฉบับปรับปรุงอัตโนมัติ
 # ==========================================
 def generate_receipt_excel_file(data):
-    """สร้างไฟล์ Excel ใบเสร็จดีไซน์ประหยัดหมึกแบบ Dynamic"""
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Receipt"
     ws.sheet_view.showGridLines = False
 
-    # ตั้งค่าความกว้างคอลัมน์
-    ws.column_dimensions['A'].width = 10  # ลำดับ
-    ws.column_dimensions['B'].width = 50  # รายการ
-    ws.column_dimensions['C'].width = 20  # ราคา
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 50
+    ws.column_dimensions['C'].width = 20
 
-    # ส่วนหัวโรงพยาบาล
     ws['B1'] = "ใบเสร็จรับเงิน โรงพยาบาลโฮม ฉะเชิงเทรา"
     ws['B1'].font = Font(name='Tahoma', size=16, bold=True, color="2C5E3B")
     ws['B1'].alignment = Alignment(horizontal='center')
@@ -204,7 +242,6 @@ def generate_receipt_excel_file(data):
     ws['B3'].font = Font(name='Tahoma', size=10, color="555555")
     ws['B3'].alignment = Alignment(horizontal='center')
 
-    # ข้อมูลผู้ป่วย
     ws['A5'] = f"ชื่อผู้ป่วย: {data['name']}"
     ws['A5'].font = Font(name='Tahoma', size=11, bold=True)
     ws['C5'] = f"เลขที่: {data['receipt_no']}"
@@ -215,7 +252,6 @@ def generate_receipt_excel_file(data):
     ws['C6'] = f"วันที่: {data['date']}"
     ws['C6'].font = Font(name='Tahoma', size=11)
 
-    # หัวตาราง
     ws['A8'] = "ลำดับที่"
     ws['B8'] = "รายการ"
     ws['C8'] = "ราคา"
@@ -228,7 +264,6 @@ def generate_receipt_excel_file(data):
         ws[f'{col}8'].border = header_border
     ws['C8'].alignment = Alignment(horizontal='right')
 
-    # หยอดรายการค่าใช้จ่าย
     current_row = 9
     for i, item in enumerate(data['items']):
         if item.get('รายการ'):
@@ -236,14 +271,12 @@ def generate_receipt_excel_file(data):
             ws[f'B{current_row}'] = item['รายการ']
             ws[f'C{current_row}'] = item['ราคา']
             
-            ws[f'A{current_row}'].font = Font(name='Tahoma', size=11)
-            ws[f'B{current_row}'].font = Font(name='Tahoma', size=11)
-            ws[f'C{current_row}'].font = Font(name='Tahoma', size=11)
+            for col in ['A', 'B', 'C']:
+                ws[f'{col}{current_row}'].font = Font(name='Tahoma', size=11)
             ws[f'C{current_row}'].number_format = '#,##0.00'
             ws[f'C{current_row}'].alignment = Alignment(horizontal='right')
             current_row += 1
 
-    # แถวสรุปยอดรวม
     ws[f'A{current_row}'] = data['baht_text']
     ws[f'A{current_row}'].font = Font(name='Tahoma', size=11, bold=True)
     
@@ -256,7 +289,6 @@ def generate_receipt_excel_file(data):
     for col in ['A', 'B', 'C']:
         ws[f'{col}{current_row}'].border = total_border
 
-    # ข้อมูลการชำระเงินและลายเซ็นต์
     current_row += 2
     ws[f'A{current_row}'] = f"ชำระโดย : {data['payment_method']}"
     ws[f'A{current_row}'].font = Font(name='Tahoma', size=11, bold=True)
@@ -268,29 +300,13 @@ def generate_receipt_excel_file(data):
     ws[f'C{current_row}'].font = Font(name='Tahoma', size=11, bold=True)
     ws[f'C{current_row}'].alignment = Alignment(horizontal='center')
 
-    # บันทึกไฟล์ลง RAM
     output = BytesIO()
     wb.save(output)
     output.seek(0)
     return output
 
 # ==========================================
-# 5. ฟังก์ชันสร้างไฟล์ Excel บัตรนัด
-# ==========================================
-def generate_appointment_card(template_path, data):
-    wb = openpyxl.load_workbook(template_path)
-    sheet = wb.active
-    sheet['B6'], sheet['D6'] = f"ชื่อ - สกุล : {data['name']}", f"HN : {data['hn']}"
-    sheet['B10'], sheet['D10'] = f"วันที่นัด : {data['appt_date']}", f"เวลา : {data['appt_time']}"
-    sheet['B12'], sheet['D12'] = f"แพทย์ผู้ตรวจ : {data['doctor']}", f"รายการตรวจ : {data['action']} ({data['type']})"
-    sheet['B14'] = f"📌 คำแนะนำในการปฏิบัติตัว : {data['instruction']}"
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-    return output
-
-# ==========================================
-# 6. หน้าจอ UI (Streamlit)
+# 5. หน้าจอ UI (Streamlit)
 # ==========================================
 st.title("🏥 ระบบให้บริการ รพ.โฮม (Auto-Fill System)")
 
@@ -340,12 +356,14 @@ with tab1:
     baht_text_str = get_baht_text(total_fee)
     st.info(f"**💰 รวมเงินทั้งสิ้น: {total_fee:,.2f} บาท** 👉 {baht_text_str}")
 
-    # จัดเตรียมชุดข้อมูลใบเสร็จ
+    # ดึงเลขใบเสร็จและคำนวณไว้ด้านนอก (แก้บั๊ก SyntaxError)
+    receipt_no_val = ex_data["receipt_no"] if ex_data["receipt_no"] else "0000000000"
+
     data_rec = {
         "name": ex_data["name"] if ex_data["name"] else "ไม่ระบุชื่อ", 
         "hn": cn_number, 
         "address": ex_data["address"],
-        "receipt_no": receipt_no_val := ex_data["receipt_no"] if ex_data["receipt_no"] else "0000000000",
+        "receipt_no": receipt_no_val,
         "date": ex_data["date"],
         "payment_method": payment_method,
         "receiver": receiver_name,
@@ -354,7 +372,7 @@ with tab1:
         "baht_text": baht_text_str
     }
 
-    # ปุ่มดาวน์โหลดไฟล์ Excel ใบเสร็จ (เพิ่มเข้ามาใหม่ตามความต้องการ!)
+    # ปุ่มดาวน์โหลดไฟล์ Excel ใบเสร็จ
     excel_receipt_data = generate_receipt_excel_file(data_rec)
     st.download_button(
         label="📥 ดาวน์โหลดใบเสร็จรับเงินเป็นไฟล์ Excel",
@@ -364,7 +382,7 @@ with tab1:
         use_container_width=True
     )
     
-    st.write("") # เว้นบรรทัดเบาๆ
+    st.write("") 
     
     if st.button("✨ สร้างหน้าพรีวิวสำหรับปริ้นใบเสร็จ", type="primary", use_container_width=True):
         if not ex_data['name']:
@@ -377,7 +395,7 @@ with tab1:
 with tab2:
     appt_type = st.radio("ประเภทนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
     col_t1, col_t2 = st.columns(2)
-    with col_t1: appt_date = st.text_input("วันที่นัดหมาย (พิมพ์ระบุ)", value=ex_data["date"] if ex_data["date"] != "ไม่ระบุวันที่" else "12 สิงหาคม 2569")
+    with col_t1: appt_date = st.text_input("วันที่นัดหมาย (พิมพ์ระบุ)", value=ex_data["date"] if ex_data["date"] != "ไม่ระบุวันที่" else format_thai_date(datetime.today()))
     with col_t2: time_sel = st.selectbox("เวลานัด", ["08.00 - 10.00 น.", "10.00 - 12.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
     
     col_d1, col_d2 = st.columns(2)
