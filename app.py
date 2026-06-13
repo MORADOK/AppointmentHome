@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 import openpyxl
 from io import BytesIO
 import base64
+from datetime import datetime
 
 # ==========================================
 # 1. ฟังก์ชันแปลงโลโก้เพื่อใช้บนหน้าเว็บ
@@ -13,16 +14,29 @@ def get_base64_image(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
     except Exception:
-        return "" # หากไม่มีรูปให้ปล่อยว่าง
+        return "" 
 
 # ==========================================
-# 2. ฟังก์ชันสร้างหน้าเว็บสำหรับสั่งปริ้น (HTML Print)
+# 2. ฟังก์ชันแปลงวันที่คริสต์ศักราช (Python) เป็น วันที่ภาษาไทย
+# ==========================================
+def format_thai_date(date_obj):
+    """แปลง datetime.date เป็น สตริงวันที่ภาษาไทย เช่น '13 มิถุนายน 2569'"""
+    thai_months = [
+        "", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", 
+        "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ]
+    day = date_obj.day
+    month = thai_months[date_obj.month]
+    year_buddhist = date_obj.year + 543 # แปลงเป็น พ.ศ.
+    return f"{day} {month} {year_buddhist}"
+
+# ==========================================
+# 3. ฟังก์ชันสร้างหน้าเว็บสำหรับสั่งปริ้น (HTML Print)
 # ==========================================
 def generate_html_print_view(patient_data):
-    """สร้างบัตรนัดในรูปแบบ HTML เพื่อให้เบราว์เซอร์สั่งปริ้นได้ตรงๆ"""
     brand_green = "#2C5E3B"
     brand_brown = "#8B5A2B"
-    logo_base64 = get_base64_image("logo.png") # ต้องมีไฟล์ logo.png ในโฟลเดอร์เดียวกับโค้ด
+    logo_base64 = get_base64_image("logo.png") 
     
     html_content = f"""
     <!DOCTYPE html>
@@ -81,7 +95,7 @@ def generate_html_print_view(patient_data):
                 <div class="section-title">🗓️ รายละเอียดการนัดหมาย ({patient_data['type']})</div>
                 
                 <div class="row highlight">
-                    <div>วันที่นัด : {patient_data['appt_date']}</div>
+                    <div>วันที่นัด : {patient_data['appt_date_th']}</div>
                     <div>เวลา : {patient_data['appt_time']}</div>
                 </div>
                 
@@ -106,14 +120,14 @@ def generate_html_print_view(patient_data):
     return html_content
 
 # ==========================================
-# 3. ฟังก์ชันสร้างไฟล์ Excel แม่แบบสำรอง
+# 4. ฟังก์ชันสร้างไฟล์ Excel แม่แบบสำรอง
 # ==========================================
 def generate_appointment_card(template_path, patient_data):
     wb = openpyxl.load_workbook(template_path)
     sheet = wb.active
     sheet['B6'] = f"ชื่อ - สกุล : {patient_data['name']}"
     sheet['D6'] = f"HN : {patient_data['hn']}"
-    sheet['B10'] = f"วันที่นัด : {patient_data['appt_date']}"
+    sheet['B10'] = f"วันที่นัด : {patient_data['appt_date_th']}"
     sheet['D10'] = f"เวลา : {patient_data['appt_time']}"
     sheet['B12'] = f"แพทย์ผู้ตรวจ : {patient_data['doctor']}"
     sheet['D12'] = f"รายการตรวจ : {patient_data['action']} ({patient_data['type']})"
@@ -124,7 +138,7 @@ def generate_appointment_card(template_path, patient_data):
     return output
 
 # ==========================================
-# 4. หน้าจอ UI (Streamlit Frontend)
+# 5. หน้าจอ UI (Streamlit Frontend)
 # ==========================================
 st.set_page_config(page_title="ระบบออกบัตรนัด - รพ.โฮม", page_icon="🏥", layout="centered")
 
@@ -136,25 +150,23 @@ st.divider()
 st.header("1. ข้อมูลคนไข้")
 col_name, col_hn = st.columns(2)
 with col_name:
-    patient_name = st.text_input("👤 ชื่อ-นามสกุล", placeholder="เช่น นาย ธนายุทธ วิทยาประเสริฐ")
+    patient_name = st.text_input("👤 ชื่อ-นามสกุล", placeholder="ก๊อบปี้ชื่อมาวางที่นี่")
 with col_hn:
-    cn_number = st.text_input("🆔 รหัสคนไข้ (HN / CN)", placeholder="เช่น 0007234")
+    cn_number = st.text_input("🆔 รหัสคนไข้ (HN / CN)", placeholder="ก๊อบปี้ HN มาวางที่นี่")
 
 st.divider()
 
 # --- ส่วนที่ 2: รายละเอียดการนัดหมาย ---
 st.header("2. รายละเอียดการนัดหมาย")
 
-# 2.1 ส่วนการเลือกประเภทการนัดหมาย (ออพชั่นใหม่ที่เพิ่มเข้ามา)
+# เลือกประเภทการนัดหมาย
 appt_type = st.radio("🛠️ ประเภทการนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
 
-# ค่าเริ่มต้นของคำแนะนำและรายการตรวจ
 default_instruction = "รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง"
 default_action = "ตรวจติดตามอาการทั่วไป"
 
 if appt_type == "มาเจาะเลือด":
-    default_action = "เจาะเลือด ตรวจสุขภาพเบื้องหลัง"
-    # ถามต่อทันทีว่างดน้ำงดอาหารไหม
+    default_action = "เจาะเลือด ตรวจสุขภาพเบื้องต้น"
     fasting_option = st.selectbox("🥩 ต้องงดน้ำและงดอาหารหรือไม่?", ["ต้องงดน้ำและอาหาร", "ไม่ต้องงดน้ำและอาหาร"])
     
     if fasting_option == "ต้องงดน้ำและอาหาร":
@@ -166,23 +178,39 @@ if appt_type == "มาเจาะเลือด":
 
 st.write("") # เว้นบรรทัด
 
-# 2.2 ส่วนกรอก วันที่ เวลา แพทย์
+# --- อัปเดตใหม่: ส่วนเลือกวันที่และเวลาแบบไม่ต้องพิมพ์ ---
 col_date, col_time = st.columns(2)
 with col_date:
-    appt_date = st.text_input("📅 วันที่นัดหมาย", placeholder="เช่น 12 สิงหาคม 2569")
+    # 📅 ใช้ Calendar Widget (ปฏิทินให้คลิกเลือกวัน)
+    selected_date = st.date_input("📅 เลือกวันที่นัดหมาย", value=datetime.today())
+    # แปลงวันที่ที่คลิกให้เป็นรูปแบบภาษาไทยอัตโนมัติ
+    appt_date_thai = format_thai_date(selected_date)
+    st.caption(f"รูปแบบบนบัตรนัด: `{appt_date_thai}`") # แสดงให้เจ้าหน้าที่มั่นใจ
+
 with col_time:
-    appt_time = st.text_input("⏰ เวลานัด", placeholder="เช่น 08.00 - 10.00 น.")
+    # ⏰ ใช้ Dropdown เลือกเวลาสำเร็จรูป
+    time_slots = [
+        "08.00 - 10.00 น.",
+        "10.00 - 12.00 น.",
+        "13.00 - 15.00 น.",
+        "15.00 - 16.30 น.",
+        "กำหนดเวลาเอง..."
+    ]
+    selected_time = st.selectbox("⏰ เลือกเวลานัด", time_slots)
     
+    if selected_time == "กำหนดเวลาเอง...":
+        appt_time = st.text_input("พิมพ์เวลานัดเอง", placeholder="เช่น 09.30 น.")
+    else:
+        appt_time = selected_time
+
 col_doc, col_act = st.columns(2)
 with col_doc:
     doctor = st.selectbox("👨‍⚕️ แพทย์ผู้ตรวจ", ["นพ.อภิสิทธิ์ สื่อประเสริฐสิทธิ์", "ระบุแพทย์ท่านอื่น..."])
     if doctor == "ระบุแพทย์ท่านอื่น...":
         doctor = st.text_input("พิมพ์ชื่อแพทย์ผู้ตรวจ")
 with col_act:
-    # เปลี่ยนค่า value ตามประเภทงานที่เลือกด้านบนอัตโนมัติ แต่ยังแก้ไขได้
     action = st.text_input("🩺 รายการตรวจ", value=default_action)
 
-# เปลี่ยนค่า value คำแนะนำตามประเภทงานที่เลือกด้านบนอัตโนมัติ แต่ยังแก้ไขได้
 instruction = st.text_input("📌 คำแนะนำเพิ่มเติม", value=default_instruction)
 
 st.divider()
@@ -191,22 +219,23 @@ st.divider()
 st.header("3. สร้างและสั่งปริ้นบัตรนัด")
 
 if st.button("✨ สร้างบัตรนัดหมาย", type="primary", use_container_width=True):
-    if not patient_name or not cn_number or not appt_date or not appt_time:
-        st.warning("⚠️ กรุณากรอก 'ชื่อ-นามสกุล', 'รหัสคนไข้', 'วันที่' และ 'เวลา' ให้ครบถ้วน")
+    if not patient_name or not cn_number:
+        st.warning("⚠️ กรุณากรอก 'ชื่อ-นามสกุล' และ 'รหัสคนไข้' ของคนไข้ก่อนครับ")
+    elif not appt_time:
+        st.warning("⚠️ กรุณาระบุเวลานัดหมาย")
     else:
-        # รวบรวมข้อมูลทั้งหมด
         data_to_fill = {
             "name": patient_name.strip(),
             "hn": cn_number.strip(),
             "type": appt_type,
-            "appt_date": appt_date.strip(),
+            "appt_date_th": appt_date_thai, # ส่งวันที่ภาษาไทยไปใช้งาน
             "appt_time": appt_time.strip(),
             "doctor": doctor.strip(),
             "action": action.strip(),
             "instruction": instruction.strip()
         }
         
-        st.success("🎉 บัตรนัดถูกสร้างตามเงื่อนไขเรียบร้อย! คุณสามารถกดสั่งปริ้นที่หน้าต่างด้านล่างนี้ได้เลยครับ")
+        st.success("🎉 บัตรนัดพร้อมพิมพ์แล้ว! ตรวจสอบความถูกต้องและสั่งพิมพ์ด้านล่างได้เลย")
         
         # แสดงหน้าจอ HTML สำหรับสั่งปริ้นโดยตรง
         html_view = generate_html_print_view(data_to_fill)
