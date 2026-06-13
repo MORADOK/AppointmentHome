@@ -214,7 +214,7 @@ def generate_appt_html(data):
             <div class="content">
                 <div class="row"><div><b>ชื่อ:</b> {data['name']}</div><div><b>HN:</b> {data['hn']}</div></div>
                 <hr>
-                <div class="row"><div style="color:{brand_green}; font-weight:bold;">วันที่นัด: {data['appt_date']}</div>
+                <div class="row"><div style="color:{brand_green}; font-weight:bold;">วันที่นัด: {data['appt_date_th']}</div>
                 <div style="color:{brand_green}; font-weight:bold;">เวลา: {data['appt_time']}</div></div>
                 <div class="row"><div><b>แพทย์:</b> {data['doctor']}</div><div><b>รายการ:</b> {data['action']}</div></div>
                 <p style="color:{brand_brown}; font-weight:bold;">📌 คำแนะนำ: <span style="color:#333; font-weight:normal;">{data['instruction']}</span></p>
@@ -293,43 +293,82 @@ with tab1:
 
 
 # ------------------------------------
-# แท็บ 2: บัตรนัด (กรอกเองเหมือนเดิม 100%)
+# แท็บ 2: บัตรนัด (กลับมาใช้ฟอร์มอัจฉริยะแบบเดิม)
 # ------------------------------------
 with tab2:
     st.markdown("### 1️⃣ ข้อมูลคนไข้")
     col_name, col_hn = st.columns(2)
     with col_name: 
-        # ให้กรอกเองเหมือนระบบดั้งเดิม
         appt_name = st.text_input("👤 ชื่อ-นามสกุล", placeholder="เช่น นาย ธนายุทธ วิทยาประเสริฐ")
     with col_hn: 
         appt_hn = st.text_input("🆔 รหัสคนไข้ (HN / CN)", placeholder="เช่น 0007234")
         
     st.markdown("### 2️⃣ รายละเอียดการนัดหมาย")
-    appt_type = st.radio("ประเภทนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
     
-    col_t1, col_t2 = st.columns(2)
-    with col_t1: 
-        date_sel = st.date_input("วันที่นัด", value=datetime.today())
-        date_th = format_thai_date(date_sel)
-    with col_t2: 
-        time_sel = st.selectbox("เวลานัด", ["08.00 - 10.00 น.", "10.00 - 12.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
+    # --- ระบบอัจฉริยะ (เลือกว่างดน้ำงดอาหารไหม) ---
+    appt_type = st.radio("🛠️ ประเภทการนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
+
+    default_instruction = "รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง"
+    default_action = "ตรวจติดตามอาการทั่วไป"
+
+    if appt_type == "มาเจาะเลือด":
+        default_action = "เจาะเลือด ตรวจสุขภาพเบื้องต้น"
+        fasting_option = st.selectbox("🥩 ต้องงดน้ำและงดอาหารหรือไม่?", ["ต้องงดน้ำและอาหาร", "ไม่ต้องงดน้ำและอาหาร"])
+        
+        if fasting_option == "ต้องงดน้ำและอาหาร":
+            default_instruction = "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ"
+            default_action = "เจาะเลือด FBS + Lipid ก่อนพบแพทย์"
+        else:
+            default_instruction = "ไม่ต้องงดน้ำและอาหาร สามารถรับประทานอาหารมาได้ตามปกติ"
+            default_action = "เจาะเลือดทั่วไป (ไม่ต้องงดอาหาร)"
+
+    st.write("") 
+
+    # --- ระบบปฏิทิน และ กล่องเลือกเวลา ---
+    col_date, col_time = st.columns(2)
+    with col_date:
+        selected_date = st.date_input("📅 เลือกวันที่นัดหมาย", value=datetime.today())
+        date_th = format_thai_date(selected_date)
+        st.caption(f"รูปแบบบนบัตรนัด: `{date_th}`") 
+
+    with col_time:
+        time_slots = [
+            "08.00 - 10.00 น.",
+            "10.00 - 12.00 น.",
+            "13.00 - 15.00 น.",
+            "15.00 - 16.30 น.",
+            "กำหนดเวลาเอง..."
+        ]
+        selected_time = st.selectbox("⏰ เลือกเวลานัด", time_slots)
+        
+        if selected_time == "กำหนดเวลาเอง...":
+            appt_time = st.text_input("พิมพ์เวลานัดเอง", placeholder="เช่น 09.30 น.")
+        else:
+            appt_time = selected_time
     
-    col_d1, col_d2 = st.columns(2)
-    with col_d1: doc_appt = st.text_input("แพทย์ผู้ตรวจ", value="นพ.อภิสิทธิ์ สื่อประเสริฐสิทธิ์")
-    with col_d2: act_appt = st.text_input("รายการตรวจ", value="ตรวจติดตามอาการทั่วไป" if appt_type == "มาติดตามอาการ" else "เจาะเลือด ตรวจสุขภาพ")
-    ins_appt = st.text_input("คำแนะนำ", value="รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง" if appt_type == "มาติดตามอาการ" else "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ")
+    col_doc, col_act = st.columns(2)
+    with col_doc:
+        doctor = st.selectbox("👨‍⚕️ แพทย์ผู้ตรวจ", ["นพ.อภิสิทธิ์ สื่อประเสริฐสิทธิ์", "ระบุแพทย์ท่านอื่น..."])
+        if doctor == "ระบุแพทย์ท่านอื่น...":
+            doctor = st.text_input("พิมพ์ชื่อแพทย์ผู้ตรวจ")
+    with col_act:
+        act_appt = st.text_input("🩺 รายการตรวจ", value=default_action)
+        
+    ins_appt = st.text_input("📌 คำแนะนำเพิ่มเติม", value=default_instruction)
 
     if st.button("✨ สร้างบัตรนัด", type="primary", use_container_width=True):
         if not appt_name or not appt_hn:
             st.warning("⚠️ กรุณากรอก 'ชื่อ-นามสกุล' และ 'HN' ก่อนกดสร้างบัตรนัดครับ")
+        elif not appt_time:
+            st.warning("⚠️ กรุณาระบุเวลานัดหมาย")
         else:
             data_appt = {
                 "name": appt_name.strip(), 
                 "hn": appt_hn.strip(), 
                 "type": appt_type, 
-                "appt_date": date_th, 
-                "appt_time": time_sel, 
-                "doctor": doc_appt.strip(), 
+                "appt_date_th": date_th, 
+                "appt_time": appt_time.strip(), 
+                "doctor": doctor.strip(), 
                 "action": act_appt.strip(), 
                 "instruction": ins_appt.strip()
             }
