@@ -356,7 +356,6 @@ with tab1:
     baht_text_str = get_baht_text(total_fee)
     st.info(f"**💰 รวมเงินทั้งสิ้น: {total_fee:,.2f} บาท** 👉 {baht_text_str}")
 
-    # ดึงเลขใบเสร็จออกมาจัดการ (แก้บั๊ก SyntaxError)
     receipt_no_val = ex_data["receipt_no"] if ex_data["receipt_no"] else "0000000000"
 
     data_rec = {
@@ -372,7 +371,6 @@ with tab1:
         "baht_text": baht_text_str
     }
 
-    # ดาวน์โหลด Excel ใบเสร็จ
     excel_receipt_data = generate_receipt_excel_file(data_rec)
     st.download_button(
         label="📥 ดาวน์โหลดใบเสร็จรับเงินเป็นไฟล์ Excel",
@@ -395,6 +393,19 @@ with tab1:
 with tab2:
     appt_type = st.radio("ประเภทนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
     
+    # 🚨 นำฟังก์ชัน "งดน้ำและอาหาร" กลับมาตรงนี้ครับ
+    default_action = "ตรวจติดตามอาการทั่วไป"
+    default_instruction = "รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง"
+
+    if appt_type == "มาเจาะเลือด":
+        fasting_option = st.selectbox("🥩 ต้องงดน้ำและงดอาหารหรือไม่?", ["ต้องงดน้ำและอาหาร", "ไม่ต้องงดน้ำและอาหาร"])
+        if fasting_option == "ต้องงดน้ำและอาหาร":
+            default_action = "เจาะเลือด FBS + Lipid ก่อนพบแพทย์"
+            default_instruction = "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ"
+        else:
+            default_action = "เจาะเลือดทั่วไป (ไม่ต้องงดอาหาร)"
+            default_instruction = "ไม่ต้องงดน้ำและอาหาร สามารถรับประทานอาหารมาได้ตามปกติ"
+
     st.markdown("**📅 ระบบคำนวณวันนัดอัตโนมัติ**")
     col_c1, col_c2, col_c3 = st.columns([1, 1, 2])
     with col_c1:
@@ -402,7 +413,6 @@ with tab2:
     with col_c2:
         adv_unit = st.selectbox("หน่วย", ["วัน (Days)", "สัปดาห์ (Weeks)", "เดือน (Months)"])
     
-    # ใช้วันที่ปัจจุบันในการคำนวณ
     base_date = pd.Timestamp.today()
     if adv_num > 0:
         if "วัน" in adv_unit:
@@ -415,7 +425,6 @@ with tab2:
         calc_date = base_date
 
     with col_c3:
-        # ใช้ Calendar Picker เพื่อให้ปรับเปลี่ยนตามวันหยุดได้
         final_date = st.date_input("🗓️ ปฏิทิน (ระบบคำนวณให้อัตโนมัติ ปรับคลิกแก้ได้)", value=calc_date.date())
         appt_date_thai = format_thai_date(final_date)
         
@@ -427,8 +436,8 @@ with tab2:
         
     col_d1, col_d2 = st.columns(2)
     with col_d1: doc_appt = st.text_input("แพทย์ผู้ตรวจ", value="นพ.อภิสิทธิ์ สื่อประเสริฐสิทธิ์")
-    with col_d2: act_appt = st.text_input("รายการตรวจ", value="ตรวจติดตามอาการทั่วไป" if appt_type == "มาติดตามอาการ" else "เจาะเลือด ตรวจสุขภาพ")
-    ins_appt = st.text_input("คำแนะนำ", value="รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง" if appt_type == "มาติดตามอาการ" else "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ")
+    with col_d2: act_appt = st.text_input("รายการตรวจ", value=default_action)
+    ins_appt = st.text_input("คำแนะนำ", value=default_instruction)
 
     if st.button("✨ สร้างหน้าพรีวิวสำหรับปริ้นบัตรนัด", type="primary", use_container_width=True):
         if not ex_data['name']:
