@@ -14,12 +14,18 @@ st.markdown(
     f"""
     <style>
     [data-testid="stPageLink"] a {{
-        border: 1px solid #ddd;
+        border: 1px solid #cfd8d2;
         border-radius: 8px;
         padding: 8px 14px !important;
         background-color: #f7f9f8;
         font-weight: 600;
         transition: all 0.15s ease;
+    }}
+    /* บังคับสีตัวอักษร/ไอคอนให้เป็นเขียวเข้ม มองเห็นได้ทั้งโหมดสว่างและมืด */
+    [data-testid="stPageLink"] a p,
+    [data-testid="stPageLink"] a span,
+    [data-testid="stPageLink"] a * {{
+        color: {brand_green} !important;
     }}
     [data-testid="stPageLink"] a:hover {{
         background-color: {brand_green};
