@@ -9,11 +9,17 @@ brand_brown = "#8B5A2B"
 # CSS ซ่อนเมนู Streamlit (White-label App) — เรียกใช้ใน page ด้วย st.markdown(...)
 hide_streamlit_style = """
 <style>
-    /* ซ่อนเฉพาะเมนู/ปุ่มต่างๆ โดยตรง — ไม่แตะ header และ sidebar เพื่อให้ปุ่มเปิด/ปิด sidebar ทำงานปกติ */
+    /* ใช้เมนูแบบ in-content แล้ว (position="hidden") จึงซ่อน header ทั้งก้อนได้เลย */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header[data-testid="stHeader"] {display: none !important;}
+    [data-testid="stHeader"] {display: none !important;}
     [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
+    [data-testid="stToolbarActions"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+    .stStatusWidget {display: none !important;}
+    [class*="StatusWidget"] {display: none !important;}
     [data-testid="stAppDeployButton"] {display: none !important;}
     .stDeployButton {display: none !important;}
     .stAppDeployButton {display: none !important;}
