@@ -10,18 +10,24 @@ brand_brown = "#8B5A2B"
 hide_streamlit_style = """
 <style>
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
     footer {visibility: hidden;}
-    [data-testid="stHeader"] {display: none !important;}
+    header {visibility: hidden;}
     [data-testid="stDecoration"] {display: none !important;}
     [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
     [data-testid="stAppDeployButton"] {display: none !important;}
     .stDeployButton {display: none !important;}
     .stAppDeployButton {display: none !important;}
     #viewerBadge_container {display: none !important;}
     .viewerBadge_container {display: none !important;}
     [data-testid="viewerBadge"] {display: none !important;}
+    /* คงปุ่มเปิด sidebar (ลูกศร) ไว้ ไม่ให้โดนซ่อนไปกับ header */
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stExpandSidebarButton"] {
+        visibility: visible !important;
+        display: flex !important;
+    }
     .block-container { padding-top: 1rem; padding-bottom: 0rem; }
 </style>
 """
