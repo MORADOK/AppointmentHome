@@ -25,7 +25,7 @@ HEADER_HTML = f"""
 """
 
 FOOTER_HTML = """
-<div style="display:flex; justify-content:space-between; font-size:11px; color:#555; margin-top:40px; border-top:1px solid #ddd; padding-top:8px;">
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#555; margin-top:auto; border-top:1px solid #ddd; padding-top:8px;">
     <div><b>โรงพยาบาลโฮม ฉะเชิงเทรา</b><br>149/1 ถ.ฉะเชิงเทรา-บางปะกง ต.หน้าเมือง อ.เมือง จ.ฉะเชิงเทรา 24000<br>Tel. 038-511-123 | E-mail: Hospitalashome@gmail.com</div>
     <div style="text-align:right;"><b>บริษัท สื่อ การแพทย์ จำกัด</b><br>149/1 ถ.ฉะเชิงเทรา-บางปะกง ต.หน้าเมือง<br>อ.เมือง จ.ฉะเชิงเทรา 24000<br>เลขประจำตัวผู้เสียภาษีอากร 0245563001367</div>
 </div>
@@ -36,8 +36,9 @@ def _wrap_html(title, body):
     """ครอบเนื้อหาด้วย template + ปุ่มปริ้น แล้วคืนค่าเป็น base64"""
     html = f"""<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>
         * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
-        body {{ font-family: 'Tahoma', sans-serif; color: #222; font-size: 14px; margin: 0; padding: 10px; line-height: 1.7; }}
-        .card {{ max-width: 800px; margin: 0 auto; padding: 25px; background-color: white; }}
+        html, body {{ height: 100%; }}
+        body {{ font-family: 'Tahoma', sans-serif; color: #222; font-size: 14px; margin: 0; padding: 10px; line-height: 1.7; box-sizing: border-box; }}
+        .card {{ max-width: 800px; margin: 0 auto; padding: 25px; background-color: white; min-height: calc(100vh - 20px); display: flex; flex-direction: column; box-sizing: border-box; }}
         .doc-title {{ text-align:center; font-size:20px; font-weight:bold; margin:10px 0 20px 0; }}
         .field {{ margin-bottom:8px; }}
         .dots {{ border-bottom:1px dotted #555; display:inline-block; min-width:120px; }}
