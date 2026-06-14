@@ -1,18 +1,22 @@
 import streamlit as st
+from pathlib import Path
 
 from utils import hide_streamlit_style
 
 # ==========================================
 # 0. ตั้งค่าหน้าและซ่อนเมนู (เรียก set_page_config ที่เดียวตรงนี้เท่านั้น)
 # ==========================================
-st.set_page_config(page_title="ระบบจัดการ รพ.โฮม", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="ระบบจัดการ รพ.โฮม", page_icon="🏥", layout="wide", initial_sidebar_state="expanded")
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# โฟลเดอร์ที่ไฟล์ app.py นี้อยู่ (ใช้สร้าง path แบบเต็ม กัน path หาไฟล์ไม่เจอ)
+BASE_DIR = Path(__file__).parent
 
 # ==========================================
 # 1. กำหนดหน้าและเมนูนำทาง (Sidebar)
 # ==========================================
 receipt_page = st.Page(
-    "views/receipt.py",
+    BASE_DIR / "views" / "receipt.py",
     title="ใบเสร็จรับเงิน",
     icon="🧾",
     url_path="receipt",
@@ -20,7 +24,7 @@ receipt_page = st.Page(
 )
 
 appointment_page = st.Page(
-    "views/appointment.py",
+    BASE_DIR / "views" / "appointment.py",
     title="บัตรนัดหมาย",
     icon="🏥",
     url_path="appointment",
