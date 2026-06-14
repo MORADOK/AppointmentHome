@@ -60,8 +60,15 @@ appointment_page = st.Page(
     url_path="appointment",
 )
 
+medical_cert_page = st.Page(
+    BASE_DIR / "views" / "medical_cert.py",
+    title="ใบรับรองแพทย์",
+    icon="📄",
+    url_path="medical-cert",
+)
+
 # ปิดเมนูเริ่มต้นของ Streamlit (sidebar/top) แล้วสร้างเมนูเองด้านล่าง
-nav = st.navigation([receipt_page, appointment_page], position="hidden")
+nav = st.navigation([receipt_page, appointment_page, medical_cert_page], position="hidden")
 
 # ==========================================
 # 2. เมนูที่สร้างเอง (อยู่ในเนื้อหา จึงไม่หายเหมือน sidebar/header)
@@ -71,11 +78,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-col1, col2, _ = st.columns([1.2, 1.2, 4])
+col1, col2, col3, _ = st.columns([1.2, 1.2, 1.2, 3])
 with col1:
     st.page_link(receipt_page, label="ใบเสร็จรับเงิน", icon="🧾", width="stretch")
 with col2:
     st.page_link(appointment_page, label="บัตรนัดหมาย", icon="🏥", width="stretch")
+with col3:
+    st.page_link(medical_cert_page, label="ใบรับรองแพทย์", icon="📄", width="stretch")
 
 st.divider()
 
