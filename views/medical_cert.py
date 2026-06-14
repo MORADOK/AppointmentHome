@@ -57,8 +57,15 @@ def _wrap_html(title, body):
 
 
 def _val(x, default="......................"):
+    """แสดงค่าที่กรอก: ตัวหนา สีดำเข้ม บนเส้นจุดไข่ปลา ให้ดูเด่นแตกต่างจากข้อความ template
+    ถ้าเว้นว่าง: แสดงเส้นจุดไข่ปลาสีจางไว้เขียนเอง"""
     x = str(x).strip() if x else ""
-    return x if x else default
+    if x:
+        return (
+            f'<span style="font-weight:bold; color:#000; '
+            f'border-bottom:1px dotted #555; padding:0 4px;">{x}</span>'
+        )
+    return f'<span style="color:#999; letter-spacing:1px;">{default}</span>'
 
 
 # ==========================================
