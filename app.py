@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
 
-from utils import hide_streamlit_style
+from utils import hide_streamlit_style, brand_green
 
 # ==========================================
 # 0. ตั้งค่าหน้าและซ่อนเมนู (เรียก set_page_config ที่เดียวตรงนี้เท่านั้น)
@@ -9,11 +9,11 @@ from utils import hide_streamlit_style
 st.set_page_config(page_title="ระบบจัดการ รพ.โฮม", page_icon="🏥", layout="wide")
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# โฟลเดอร์ที่ไฟล์ app.py นี้อยู่ (ใช้สร้าง path แบบเต็ม กัน path หาไฟล์ไม่เจอ)
+# โฟลเดอร์ที่ไฟล์ app.py นี้อยู่ (สร้าง path แบบเต็ม กัน path หาไฟล์ไม่เจอ)
 BASE_DIR = Path(__file__).parent
 
 # ==========================================
-# 1. กำหนดหน้าและเมนูนำทาง (แสดงที่แถบด้านบน ไม่ใช้ sidebar)
+# 1. กำหนดหน้า
 # ==========================================
 receipt_page = st.Page(
     BASE_DIR / "views" / "receipt.py",
@@ -30,6 +30,26 @@ appointment_page = st.Page(
     url_path="appointment",
 )
 
-# position="top" = เมนูอยู่แถบบน (เลี่ยงปัญหา sidebar หาย/เปิดไม่ได้)
-pg = st.navigation([receipt_page, appointment_page], position="top")
-pg.run()
+# ปิดเมนูเริ่มต้นของ Streamlit (sidebar/top) แล้วสร้างเมนูเองด้านล่าง
+nav = st.navigation([receipt_page, appointment_page], position="hidden")
+
+# ==========================================
+# 2. เมนูที่สร้างเอง (อยู่ในเนื้อหา จึงไม่หายเหมือน sidebar/header)
+# ==========================================
+st.markdown(
+    f"<h4 style='color:{brand_green}; margin-bottom:0.3rem;'>🏥 ระบบให้บริการ รพ.โฮม ฉะเชิงเทรา</h4>",
+    unsafe_allow_html=True,
+)
+
+col1, col2, _ = st.columns([1, 1, 4])
+with col1:
+    st.page_link(receipt_page, label="ใบเสร็จรับเงิน", icon="🧾", width="stretch")
+with col2:
+    st.page_link(appointment_page, label="บัตรนัดหมาย", icon="🏥", width="stretch")
+
+st.divider()
+
+# ==========================================
+# 3. แสดงเนื้อหาของหน้าที่เลือก
+# ==========================================
+nav.run()
