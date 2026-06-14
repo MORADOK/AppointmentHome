@@ -12,7 +12,13 @@ hide_streamlit_style = """
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
+    [data-testid="stHeader"] {display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    [data-testid="stToolbar"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
+    [data-testid="stAppDeployButton"] {display: none !important;}
     .stDeployButton {display: none !important;}
+    .stAppDeployButton {display: none !important;}
     #viewerBadge_container {display: none !important;}
     .viewerBadge_container {display: none !important;}
     [data-testid="viewerBadge"] {display: none !important;}
