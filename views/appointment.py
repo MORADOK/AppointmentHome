@@ -62,11 +62,55 @@ st.divider()
 
 # --- ส่วนที่ 2: รายละเอียดนัดหมาย ---
 st.markdown("### 2️⃣ รายละเอียดการนัดหมาย")
-appt_type = st.radio("ประเภทนัดหมาย", ["มาติดตามอาการ", "มาเจาะเลือด"], horizontal=True)
+appt_type = st.radio(
+    "ประเภทนัดหมาย",
+    ["มาติดตามอาการ", "มาเจาะเลือด", "นัด Ultrasound"],
+    horizontal=True,
+)
 
-# ค่าเริ่มต้น + ตัวเลือกงดน้ำงดอาหารกรณีเจาะเลือด
+# ค่าเริ่มต้น
 default_action = "ตรวจติดตามอาการทั่วไป"
 default_instruction = "รับประทานยาและปฏิบัติตัวตามแพทย์สั่ง"
+
+# ตารางชนิด Ultrasound + คำแนะนำการเตรียมตัว (มาตรฐานทั่วไป พนักงานปรับแก้ได้)
+US_PREP = {
+    "ช่องท้องส่วนบน (ตับ ถุงน้ำดี ตับอ่อน ม้าม)": {
+        "action": "Ultrasound Upper Abdomen",
+        "instruction": "งดน้ำ-งดอาหาร อย่างน้อย 6-8 ชั่วโมงก่อนตรวจ",
+    },
+    "ช่องท้องส่วนล่าง / อุ้งเชิงกราน": {
+        "action": "Ultrasound Lower Abdomen / Pelvis",
+        "instruction": "ดื่มน้ำ 4-6 แก้วก่อนตรวจประมาณ 1 ชั่วโมง และกลั้นปัสสาวะให้กระเพาะปัสสาวะเต็ม",
+    },
+    "ช่องท้องทั้งหมด (Whole Abdomen)": {
+        "action": "Ultrasound Whole Abdomen",
+        "instruction": "งดน้ำ-งดอาหาร 6-8 ชั่วโมง และกลั้นปัสสาวะให้กระเพาะปัสสาวะเต็มก่อนตรวจ",
+    },
+    "ไต / ระบบทางเดินปัสสาวะ (KUB)": {
+        "action": "Ultrasound KUB",
+        "instruction": "ดื่มน้ำ 4-6 แก้วก่อนตรวจประมาณ 1 ชั่วโมง และกลั้นปัสสาวะให้กระเพาะปัสสาวะเต็ม",
+    },
+    "ครรภ์ (สูติ-นรีเวช)": {
+        "action": "Ultrasound Obstetric",
+        "instruction": "ครรภ์อ่อน (อายุครรภ์น้อย): กลั้นปัสสาวะให้กระเพาะปัสสาวะเต็ม | ครรภ์แก่: ไม่ต้องเตรียมตัวพิเศษ",
+    },
+    "ไทรอยด์ (Thyroid)": {
+        "action": "Ultrasound Thyroid",
+        "instruction": "ไม่ต้องเตรียมตัวพิเศษ งดสวมสร้อยคอ/เครื่องประดับบริเวณคอ",
+    },
+    "เต้านม (Breast)": {
+        "action": "Ultrasound Breast",
+        "instruction": "ไม่ต้องเตรียมตัวพิเศษ งดทาแป้ง/โลชั่นบริเวณเต้านมและรักแร้ในวันตรวจ",
+    },
+    "หัวใจ (Echo)": {
+        "action": "Echocardiogram",
+        "instruction": "ไม่ต้องเตรียมตัวพิเศษ รับประทานอาหารและยาได้ตามปกติ",
+    },
+    "หลอดเลือด (Doppler)": {
+        "action": "Doppler Ultrasound",
+        "instruction": "ไม่ต้องเตรียมตัวพิเศษ (หากตรวจหลอดเลือดในช่องท้อง อาจต้องงดอาหาร 6 ชั่วโมง)",
+    },
+}
 
 if appt_type == "มาเจาะเลือด":
     fasting_option = st.selectbox(
@@ -79,6 +123,13 @@ if appt_type == "มาเจาะเลือด":
     else:
         default_action = "เจาะเลือดทั่วไป (ไม่ต้องงดอาหาร)"
         default_instruction = "ไม่ต้องงดน้ำและอาหาร สามารถรับประทานอาหารมาได้ตามปกติ"
+
+elif appt_type == "นัด Ultrasound":
+    us_type = st.selectbox("🩻 ชนิดการตรวจ Ultrasound", list(US_PREP.keys()))
+    default_action = f"Ultrasound {us_type}"
+    default_instruction = US_PREP[us_type]["instruction"]
+    st.info(f"📋 **การเตรียมตัว:** {default_instruction}")
+    st.caption("หมายเหตุ: คำแนะนำเป็นมาตรฐานทั่วไป กรุณาตรวจสอบ/ปรับตามแนวทางของโรงพยาบาลและคำสั่งแพทย์")
 
 # --- ส่วนที่ 3: คำนวณวันนัดอัตโนมัติ ---
 st.markdown("**📅 ระบบคำนวณวันนัดอัตโนมัติ**")
@@ -123,7 +174,7 @@ ins_appt = st.text_input("คำแนะนำ", value=default_instruction)
 st.divider()
 
 # --- ส่วนที่ 4: สร้างพรีวิว ---
-if st.button("✨ สร้างหน้าพรีวิวสำหรับปริ้นบัตรนัด", type="primary", use_container_width=True):
+if st.button("✨ สร้างหน้าพรีวิวสำหรับปริ้นบัตรนัด", type="primary", width='stretch'):
     if not patient_name:
         st.error("⚠️ กรุณากรอกชื่อคนไข้ก่อนครับ")
     else:
