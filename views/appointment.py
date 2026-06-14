@@ -29,18 +29,18 @@ def generate_appt_html(data):
         .top img {{ width:54px; margin-right:14px; }}
         .hosp {{ font-size:20px; font-weight:bold; color:{brand_green}; line-height:1.25; }}
         .sub {{ font-size:13px; color:{brand_brown}; letter-spacing:0.5px; }}
-        .accent {{ height:4px; background:linear-gradient(90deg, {brand_green}, {brand_brown}); }}
+        .accent {{ height:3px; background:linear-gradient(90deg, #cde0d3, #e8dccb); }}
         .body {{ padding:20px 24px 24px 24px; }}
         .grid {{ display:flex; flex-wrap:wrap; }}
         .cell {{ flex:1 1 50%; padding:5px 0; font-size:14px; }}
         .cell.full {{ flex:1 1 100%; }}
-        .lbl {{ color:{brand_brown}; font-weight:bold; }}
+        .lbl {{ color:#9a8a74; font-weight:bold; }}
         .val {{ color:#1a1a1a; font-weight:bold; }}
-        .appt-box {{ background:{brand_green}; color:#fff; border-radius:10px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; margin:16px 0; }}
-        .appt-box .k {{ font-size:12px; opacity:0.85; margin-bottom:2px; }}
-        .appt-box .v {{ font-size:19px; font-weight:bold; }}
-        .infobox {{ border-left:4px solid {brand_brown}; background:#faf6f0; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:14px; }}
-        .carebox {{ border-left:4px solid {brand_green}; background:#eef4ef; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:14px; }}
+        .appt-box {{ background:#eff5f1; border:1px solid #dbe7df; color:{brand_green}; border-radius:10px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; margin:16px 0; }}
+        .appt-box .k {{ font-size:12px; color:#9a9a9a; margin-bottom:2px; font-weight:normal; }}
+        .appt-box .v {{ font-size:19px; font-weight:bold; color:{brand_green}; }}
+        .infobox {{ border-left:3px solid #e0d2bd; background:#faf8f4; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:14px; }}
+        .carebox {{ border-left:3px solid #cfe0d4; background:#f3f8f4; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:14px; }}
         .notes {{ font-size:12px; color:#666; margin-top:18px; border-top:1px dashed #cfc8bd; padding-top:12px; line-height:1.9; }}
         .notes b {{ color:{brand_green}; }}
         .print-btn {{ background:{brand_green}; color:#fff; border:none; padding:11px; cursor:pointer; width:100%; font-size:16px; margin-bottom:14px; font-weight:bold; border-radius:8px; }}
