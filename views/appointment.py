@@ -17,7 +17,7 @@ def generate_appt_html(data):
     html = f"""<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>
         * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
         body {{ font-family: 'Tahoma', sans-serif; color: #333; }}
-        .card {{ max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding-bottom: 20px; background-color: white; }}
+        .card {{ max-width: 720px; margin: 0 auto; border: 1px solid #ddd; padding-bottom: 20px; background-color: white; }}
         .header {{ border-bottom: 2px solid {brand_green}; padding: 15px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }}
         .logo {{ width: 60px; margin-right: 15px; }}
         .title {{ font-size: 20px; font-weight: bold; margin: 0; color: {brand_green}; }}
@@ -36,7 +36,8 @@ def generate_appt_html(data):
                 <hr>
                 <div class="row"><div style="color:{brand_green}; font-weight:bold;">วันที่นัด: {data['appt_date']}</div>
                 <div style="color:{brand_green}; font-weight:bold;">เวลา: {data['appt_time']}</div></div>
-                <div class="row"><div><b>แพทย์:</b> {data['doctor']}</div><div><b>รายการ:</b> {data['action']}</div></div>
+                <div class="row"><div><b>แพทย์:</b> {data['doctor']}</div></div>
+                <div class="row"><div><b>รายการ:</b> {data['action']}</div></div>
                 <p style="color:{brand_brown}; font-weight:bold;">📌 คำแนะนำ: <span style="color:#333; font-weight:normal;">{data['instruction']}</span></p>
                 <p style="text-align:center; font-size:12px; margin-top:20px;">โทร 038-511-123 (กรุณานำยาเดิมมาด้วยทุกครั้ง)</p>
             </div>
