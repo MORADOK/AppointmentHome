@@ -21,7 +21,7 @@ hide_streamlit_style = """
     #viewerBadge_container {display: none !important;}
     .viewerBadge_container {display: none !important;}
     [data-testid="viewerBadge"] {display: none !important;}
-    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+    .block-container { padding-top: 2.5rem !important; padding-bottom: 2rem; }
 </style>
 """
 
