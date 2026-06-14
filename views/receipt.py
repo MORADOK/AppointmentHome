@@ -98,8 +98,9 @@ def generate_receipt_html(data):
 
     html = f"""<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>
         * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
-        body {{ font-family: 'Tahoma', sans-serif; color: #333; font-size: 14px; margin: 0; padding: 10px; }}
-        .card {{ max-width: 800px; margin: 0 auto; padding: 20px; background-color: white; }}
+        html, body {{ height: 100%; }}
+        body {{ font-family: 'Tahoma', sans-serif; color: #333; font-size: 14px; margin: 0; padding: 10px; box-sizing: border-box; }}
+        .card {{ max-width: 800px; margin: 0 auto; padding: 20px; background-color: white; min-height: calc(100vh - 20px); display: flex; flex-direction: column; box-sizing: border-box; }}
         .header-container {{ position: relative; text-align: center; margin-bottom: 30px; }}
         .logo {{ position: absolute; left: 0; top: 0; width: 60px; }}
         .header-text {{ margin-left: 70px; }}
@@ -110,7 +111,7 @@ def generate_receipt_html(data):
         th, td {{ padding: 8px 5px; }}
         th {{ border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: left; font-weight: bold; }}
         .total-row td {{ border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 15px 5px; }}
-        .footer-container {{ display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 50px; }}
+        .footer-container {{ display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: auto; padding-top: 30px; }}
         .print-btn {{ background-color: {brand_green}; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; font-size: 16px; margin-bottom: 20px; font-weight:bold; }}
         @media print {{ body {{ padding: 0; }} .no-print {{ display: none !important; }} }}
     </style></head><body>
@@ -281,7 +282,7 @@ df_items = pd.DataFrame(ex_data["items"]) if ex_data["items"] else pd.DataFrame(
 edited_df = st.data_editor(
     df_items,
     num_rows="dynamic",
-    use_container_width=True,
+    width='stretch',
     column_config={
         "รายการ": st.column_config.TextColumn("ชื่อรายการ", width="large", required=True),
         "ราคา": st.column_config.NumberColumn("ราคา (บาท)", min_value=0.0, format="%.2f"),
@@ -313,12 +314,12 @@ st.download_button(
     data=excel_receipt_data,
     file_name=f"Receipt_{receipt_no_val}_{data_rec['name']}.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    use_container_width=True
+    width='stretch'
 )
 
 st.write("")
 
-if st.button("✨ สร้างหน้าพรีวิวสำหรับปริ้นใบเสร็จ", type="primary", use_container_width=True):
+if st.button("✨ สร้างหน้าพรีวิวสำหรับปริ้นใบเสร็จ", type="primary", width='stretch'):
     if not ex_data['name']:
         st.error("⚠️ ไม่พบชื่อผู้ป่วย กรุณาอัปโหลดไฟล์ใบเสร็จก่อนครับ")
     else:
