@@ -56,10 +56,12 @@ def extract_raw_receipt(uploaded_file):
                 if any(m in v for m in thai_months) and "256" in v:
                     data["date"] = v
 
-        if not data["address"]:
+        # ดึง "ที่อยู่คนไข้" เฉพาะหลังจากเจอชื่อคนไข้แล้ว
+        # (ที่อยู่คนไข้อยู่ใต้ชื่อ ส่วนที่อยู่ รพ. อยู่ในหัวกระดาษเหนือชื่อ จึงข้าม)
+        if data["name"] and not data["address"]:
             for v in row_vals:
                 if ("ต." in v and "อ." in v) or ("ถ." in v) or ("จ." in v):
-                    if "โรงพยาบาล" not in v:
+                    if "โรงพยาบาล" not in v and "038-511" not in v and "เสียภาษี" not in v:
                         data["address"] = v
 
     for r in range(5, 50):
@@ -435,6 +437,16 @@ def _issue_receipt():
     return ok, info, rno
 
 
+def _resave_receipt(rno):
+    """บันทึกซ้ำด้วยเลขเดิม (ไม่ออกเลขใหม่) — ไฟล์จะถูกเติม (1), (2) ต่อท้ายอัตโนมัติ"""
+    data_rec["receipt_no"] = rno
+    excel_io = generate_receipt_excel_file(data_rec)
+    ok, info = save_receipt_file(rno, excel_io, data_rec["name"], ext="xlsx")
+    st.session_state.issued_no = rno
+    st.session_state.confirm_dup = False
+    return ok, info, rno
+
+
 # --- ปุ่มออกเลขใบเสร็จ + บันทึกไฟล์ลงโฟลเดอร์แชร์ ---
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
@@ -445,10 +457,20 @@ with col_btn1:
             # ตรวจว่าคนไข้คนนี้ ยอดเท่ากัน ออกใบไปแล้ววันนี้หรือยัง
             dup_no = find_today_duplicate(data_rec["name"], total_fee)
             if dup_no and not st.session_state.confirm_dup:
-                # เจอใบซ้ำ -> ขอให้กดยืนยันอีกครั้ง (ยังไม่ออกเลข)
+                # เจอใบซ้ำ -> ขอให้กดยืนยันอีกครั้ง (ยังไม่บันทึก)
                 st.session_state.confirm_dup = True
                 st.session_state.dup_no = dup_no
+            elif dup_no and st.session_state.confirm_dup:
+                # ยืนยันบันทึกซ้ำ -> ใช้เลขเดิม ไม่ออกเลขใหม่ (ไฟล์เติม (1),(2) อัตโนมัติ)
+                rno = st.session_state.get("dup_no", dup_no)
+                ok, info, rno = _resave_receipt(rno)
+                if ok:
+                    st.success(f"✅ บันทึกซ้ำด้วยเลขเดิม **{rno}** แล้ว (ไฟล์เติมลำดับซ้ำให้อัตโนมัติ)\n\n📁 {info}")
+                else:
+                    st.warning(f"⚠️ บันทึกไฟล์ไม่สำเร็จ:\n\n{info}")
+                st.rerun()
             else:
+                # ไม่ซ้ำ -> ออกเลขใหม่ตามปกติ
                 ok, info, rno = _issue_receipt()
                 if ok:
                     st.success(f"✅ ออกเลข **{rno}** และบันทึกไฟล์แล้ว\n\n📁 {info}")
@@ -466,7 +488,8 @@ if st.session_state.confirm_dup:
     st.warning(
         f"⚠️ **พบใบเสร็จซ้ำ!** คนไข้ **{data_rec['name']}** ยอด {total_fee:,.2f} บาท "
         f"ออกใบเสร็จไปแล้ววันนี้: **{st.session_state.get('dup_no', '-')}**\n\n"
-        f"หากต้องการออกใบ**ซ้ำอีกใบจริงๆ** กดปุ่ม \"🧾 ออกเลขใบเสร็จ + บันทึกลงระบบ\" อีกครั้งเพื่อยืนยัน "
+        f"หากต้องการ**บันทึกซ้ำด้วยเลขเดิม** (ระบบจะเติม (1), (2) ต่อท้ายชื่อไฟล์ให้ ไม่ออกเลขใหม่) "
+        f"กดปุ่ม \"🧾 ออกเลขใบเสร็จ + บันทึกลงระบบ\" อีกครั้งเพื่อยืนยัน "
         f"หรือกด \"🔄 เริ่มใบเสร็จใหม่\" เพื่อยกเลิก"
     )
 
