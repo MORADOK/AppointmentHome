@@ -343,7 +343,7 @@ st.divider()
 st.markdown("### 2️⃣ ข้อมูลที่พนักงานต้องกรอกเอง")
 col_emp1, col_emp2 = st.columns(2)
 with col_emp1:
-    receiver_name = st.text_input("👤 ชื่อผู้รับเงิน (พนักงาน)", value="นาย มรดก มาลี")
+    receiver_name = st.text_input("👤 ชื่อผู้รับเงิน (พนักงาน)", value="นาย ตัวอย่าง นะจ๋ะ")
 with col_emp2:
     cn_number = st.text_input("🆔 รหัสคนไข้ (HN / CN)", placeholder="(ไม่บังคับ)")
 
@@ -374,7 +374,9 @@ else:
     prefix = PAYMENT_PREFIX[pay_type]
     payment_label = pay_type
 
-st.info(f"รหัสนำหน้าเลขใบเสร็จ: **{prefix}**  →  ตัวอย่างเลขที่จะออก `{prefix}690615-01`")
+_now = datetime.now()
+_today_key = f"{(_now.year + 543) % 100:02d}{_now.month:02d}{_now.day:02d}"
+st.info(f"รหัสนำหน้าเลขใบเสร็จ: **{prefix}**  →  ตัวอย่างเลขที่จะออก `{prefix}{_today_key}-01`")
 
 st.divider()
 
@@ -402,6 +404,12 @@ st.info(f"**💰 รวมเงินทั้งสิ้น: {total_fee:,.2f}
 if "issued_no" not in st.session_state:
     st.session_state.issued_no = None
 if "confirm_dup" not in st.session_state:
+    st.session_state.confirm_dup = False
+
+# ถ้าสลับโหมดการชำระ (prefix เปลี่ยน) ให้ล้างเลขเดิม กันเลขโหมดเก่าค้าง
+if st.session_state.get("last_prefix") != prefix:
+    st.session_state.last_prefix = prefix
+    st.session_state.issued_no = None
     st.session_state.confirm_dup = False
 
 # ถ้ายังไม่ออกเลข ใช้เลขจากไฟล์ Excel (ถ้ามี) หรือข้อความรอออกเลข
@@ -455,7 +463,7 @@ with col_btn1:
             st.error("⚠️ ไม่พบชื่อผู้ป่วย กรุณาอัปโหลดไฟล์ใบเสร็จก่อนครับ")
         else:
             # ตรวจว่าคนไข้คนนี้ ยอดเท่ากัน ออกใบไปแล้ววันนี้หรือยัง
-            dup_no = find_today_duplicate(data_rec["name"], total_fee)
+            dup_no = find_today_duplicate(data_rec["name"], total_fee, prefix)
             if dup_no and not st.session_state.confirm_dup:
                 # เจอใบซ้ำ -> ขอให้กดยืนยันอีกครั้ง (ยังไม่บันทึก)
                 st.session_state.confirm_dup = True
