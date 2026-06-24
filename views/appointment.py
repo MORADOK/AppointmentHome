@@ -124,7 +124,7 @@ st.divider()
 st.markdown("### 2️⃣ รายละเอียดการนัดหมาย")
 appt_type = st.radio(
     "ประเภทนัดหมาย",
-    ["มาติดตามอาการ", "มาเจาะเลือด", "นัด Ultrasound"],
+    ["มาติดตามอาการ", "หัตถการ", "นัด Ultrasound"],
     horizontal=True,
 )
 
@@ -172,17 +172,31 @@ US_PREP = {
     },
 }
 
-if appt_type == "มาเจาะเลือด":
-    fasting_option = st.selectbox(
-        "🥩 ต้องงดน้ำและงดอาหารหรือไม่?",
-        ["ต้องงดน้ำและอาหาร", "ไม่ต้องงดน้ำและอาหาร"]
+if appt_type == "หัตถการ":
+    proc_type = st.selectbox(
+        "🔧 ประเภทหัตถการ",
+        ["เจาะเลือด", "ผ่าตัดเล็ก", "ทำแผล", "ทำแผล/ตัดไหม"]
     )
-    if fasting_option == "ต้องงดน้ำและอาหาร":
-        default_action = "เจาะเลือด FBS + Lipid ก่อนพบแพทย์"
-        default_instruction = "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ"
-    else:
-        default_action = "เจาะเลือดทั่วไป (ไม่ต้องงดอาหาร)"
-        default_instruction = "ไม่ต้องงดน้ำและอาหาร สามารถรับประทานอาหารมาได้ตามปกติ"
+    if proc_type == "เจาะเลือด":
+        fasting_option = st.selectbox(
+            "🥩 ต้องงดน้ำและงดอาหารหรือไม่?",
+            ["ต้องงดน้ำและอาหาร", "ไม่ต้องงดน้ำและอาหาร"]
+        )
+        if fasting_option == "ต้องงดน้ำและอาหาร":
+            default_action = "เจาะเลือด FBS + Lipid ก่อนพบแพทย์"
+            default_instruction = "งดน้ำ-งดอาหาร 6-8 ชั่วโมงก่อนตรวจ"
+        else:
+            default_action = "เจาะเลือดทั่วไป (ไม่ต้องงดอาหาร)"
+            default_instruction = "ไม่ต้องงดน้ำและอาหาร สามารถรับประทานอาหารมาได้ตามปกติ"
+    elif proc_type == "ผ่าตัดเล็ก":
+        default_action = "ผ่าตัดเล็ก (Minor Surgery)"
+        default_instruction = "ทำความสะอาดร่างกายก่อนมา งดทาครีม/โลชั่นบริเวณที่ทำหัตถการ และแจ้งประวัติแพ้ยา/โรคประจำตัวกับเจ้าหน้าที่"
+    elif proc_type == "ทำแผล":
+        default_action = "ทำแผล (Wound Dressing)"
+        default_instruction = "รักษาความสะอาดบริเวณแผล ไม่ให้แผลโดนน้ำก่อนมาทำแผล และนำยา/อุปกรณ์เดิม (ถ้ามี) มาด้วย"
+    else:  # ทำแผล/ตัดไหม
+        default_action = "ทำแผล / ตัดไหม (Dressing & Suture Removal)"
+        default_instruction = "รักษาความสะอาดบริเวณแผล ไม่ให้แผลโดนน้ำก่อนมา และนำใบนัด/ประวัติการเย็บแผลมาด้วย"
 
 elif appt_type == "นัด Ultrasound":
     us_type = st.selectbox("🩻 ชนิดการตรวจ Ultrasound", list(US_PREP.keys()))
@@ -220,9 +234,14 @@ col_t1, col_t2 = st.columns(2)
 with col_t1:
     appt_date_text = st.text_input("รูปแบบวันที่บนบัตร (แก้ไขข้อความได้)", value=appt_date_thai)
 with col_t2:
-    time_sel = st.selectbox("เวลานัด",
-                            ["08.00 - 10.00 น.", "10.00 - 12.00 น.",
-                             "12.15 - 13.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น."])
+    _time_choice = st.selectbox("เวลานัด",
+                                ["08.00 - 10.00 น.", "10.00 - 12.00 น.",
+                                 "12.15 - 13.00 น.", "13.00 - 15.00 น.", "15.00 - 16.30 น.",
+                                 "ระบุเวลา..."])
+    if _time_choice == "ระบุเวลา...":
+        time_sel = st.text_input("พิมพ์เวลานัดเอง", placeholder="เช่น 09.30 - 11.00 น.")
+    else:
+        time_sel = _time_choice
 
 st.divider()
 
